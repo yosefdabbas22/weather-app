@@ -41,8 +41,9 @@ export default function SearchBar({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           aria-label="Search for a city"
+          aria-describedby="search-description"
         />
       </div>
     </div>

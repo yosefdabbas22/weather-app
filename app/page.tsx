@@ -119,7 +119,7 @@ export default function Home() {
       </header>
 
       {/* Main Content - Centered Container */}
-      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8" aria-label="Main weather content">
         <div className="w-full max-w-4xl mx-auto">
           {/* Search Bar */}
           <SearchBar
@@ -176,13 +176,13 @@ export default function Home() {
           {state === 'success' && weatherData && (
             <>
               {/* City Title */}
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2" aria-label={`Weather for ${weatherData.city}, ${weatherData.country}`}>
                 {weatherData.city}, {weatherData.country}
               </h2>
 
               {/* Summary Line */}
-              <p className="text-gray-300 mb-8 flex items-center gap-2">
-                <span>{getSummaryIcon(weatherData)}</span>
+              <p className="text-gray-300 mb-8 flex items-center gap-2" aria-live="polite">
+                <span aria-hidden="true">{getSummaryIcon(weatherData)}</span>
                 <span>{getSummaryText(weatherData)}</span>
               </p>
 
