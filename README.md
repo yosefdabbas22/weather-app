@@ -55,7 +55,7 @@ A modern, production-ready weather application built with Next.js, TypeScript, a
    pnpm dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. Open [weather-app-kohl-eight-74.vercel.app] in your browser.
 
 ### Building for Production
 
