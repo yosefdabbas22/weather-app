@@ -68,8 +68,17 @@ export default function Home() {
     fetchWeather(searchValue)
   }
 
-  // Helper to format temperature (will be extended in Step 6)
-  const formatTemp = (temp: number) => `${temp}°F`
+  // Convert Celsius to Fahrenheit
+  const cToF = (c: number): number => {
+    return Math.round((c * 9) / 5 + 32)
+  }
+
+  // Format temperature with correct unit (assumes input is in Celsius)
+  const formatTemp = (tempC: number, unit: 'c' | 'f'): string => {
+    const value = unit === 'f' ? cToF(tempC) : Math.round(tempC)
+    const symbol = unit === 'f' ? '°F' : '°C'
+    return `${value}${symbol}`
+  }
 
   // Helper to get summary text with weather condition
   const getSummaryText = (data: WeatherData) => {
@@ -77,7 +86,7 @@ export default function Home() {
     // Use today's weather code (first day) or current weather code as fallback
     const weatherCode = data.daily[0]?.weatherCode || data.current.weatherCode
     const condition = getWeatherLabel(weatherCode).toLowerCase()
-    return `${condition} with a high of ${formatTemp(high)}`
+    return `${condition} with a high of ${formatTemp(high, unit)}`
   }
 
   // Helper to get summary icon from weather code
@@ -93,8 +102,8 @@ export default function Home() {
       const weatherInfo = getWeatherInfo(day.weatherCode)
       return {
         day: day.date,
-        high: formatTemp(day.high),
-        low: formatTemp(day.low),
+        high: formatTemp(day.high, unit),
+        low: formatTemp(day.low, unit),
         condition: weatherInfo.label,
         icon: weatherInfo.icon,
       }
@@ -212,7 +221,7 @@ export default function Home() {
                 />
                 <StatCard
                   label="Feels Like"
-                  value={formatTemp(weatherData.current.feelsLike)}
+                  value={formatTemp(weatherData.current.feelsLike, unit)}
                 />
               </div>
 
