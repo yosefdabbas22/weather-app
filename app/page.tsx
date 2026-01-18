@@ -5,21 +5,85 @@ import SearchBar from '@/components/SearchBar'
 import StatCard from '@/components/StatCard'
 import ForecastTable, { type ForecastDay } from '@/components/ForecastTable'
 
-// Mock data - will be replaced with API data later
-const mockForecast: ForecastDay[] = [
-  { day: 'Today', high: '75°', low: '58°', condition: 'Clear', icon: '☀️' },
-  { day: 'Tomorrow', high: '72°', low: '56°', condition: 'Partly Cloudy', icon: '⛅' },
-  { day: 'Wednesday', high: '68°', low: '54°', condition: 'Cloudy', icon: '☁️' },
-  { day: 'Thursday', high: '70°', low: '55°', condition: 'Clear', icon: '☀️' },
-  { day: 'Friday', high: '73°', low: '57°', condition: 'Partly Cloudy', icon: '⛅' },
-]
+// Weather API response type
+interface WeatherData {
+  city: string
+  country: string
+  current: {
+    temperature: number
+    humidity: number
+    feelsLike: number
+    windSpeed: number
+    weatherCode: number
+  }
+  daily: Array<{
+    date: string
+    high: number
+    low: number
+    weatherCode: number
+  }>
+}
+
+type WeatherState = 'empty' | 'loading' | 'error' | 'success'
 
 export default function Home() {
   const [searchValue, setSearchValue] = useState('')
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
+  const [state, setState] = useState<WeatherState>('empty')
+  const [errorMessage, setErrorMessage] = useState<string>('')
+
+  const fetchWeather = async (city: string) => {
+    if (!city.trim()) {
+      return
+    }
+
+    setState('loading')
+    setErrorMessage('')
+
+    try {
+      const response = await fetch(`/api/weather?city=${encodeURIComponent(city.trim())}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        setErrorMessage(errorData.error || 'Failed to fetch weather data')
+        setState('error')
+        setWeatherData(null)
+        return
+      }
+
+      const data: WeatherData = await response.json()
+      setWeatherData(data)
+      setState('success')
+    } catch (error) {
+      console.error('Weather fetch error:', error)
+      setErrorMessage('Network error. Please check your connection and try again.')
+      setState('error')
+      setWeatherData(null)
+    }
+  }
 
   const handleSearchSubmit = () => {
-    // Will be implemented in Step 4
-    console.log('Searching for:', searchValue)
+    fetchWeather(searchValue)
+  }
+
+  // Helper to format temperature (will be extended in Step 6)
+  const formatTemp = (temp: number) => `${temp}°F`
+
+  // Helper to get summary text (placeholder - will use weather code mapping in Step 5)
+  const getSummaryText = (data: WeatherData) => {
+    const high = data.daily[0]?.high || data.current.temperature
+    return `Mostly clear with a high of ${formatTemp(high)}`
+  }
+
+  // Convert API data to ForecastDay format (condition will use weather code in Step 5)
+  const convertToForecastDays = (data: WeatherData): ForecastDay[] => {
+    return data.daily.map((day) => ({
+      day: day.date,
+      high: formatTemp(day.high),
+      low: formatTemp(day.low),
+      condition: 'Clear', // Placeholder - will use weather code mapping in Step 5
+      icon: '☀️', // Placeholder - will use weather code mapping in Step 5
+    }))
   }
 
   return (
@@ -50,31 +114,93 @@ export default function Home() {
             onSubmit={handleSearchSubmit}
           />
 
-          {/* City Title */}
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-            Amman, Jordan
-          </h2>
+          {/* Loading State */}
+          {state === 'loading' && (
+            <div className="space-y-8">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-700 rounded w-48 mb-2"></div>
+                <div className="h-6 bg-gray-700 rounded w-64 mb-8"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                      <div className="h-4 bg-gray-700 rounded w-20 mb-2"></div>
+                      <div className="h-8 bg-gray-700 rounded w-16"></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                  <div className="h-6 bg-gray-700 rounded w-40 mb-4"></div>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-16 bg-gray-700 rounded mb-2"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Summary Line */}
-          <p className="text-gray-300 mb-8 flex items-center gap-2">
-            <span>☀️</span>
-            <span>Mostly clear with a high of 75°F</span>
-          </p>
+          {/* Error State */}
+          {state === 'error' && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-6 mb-8">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h3 className="text-red-300 font-semibold mb-1">Error</h3>
+                  <p className="text-red-200 text-sm">{errorMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Stat Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <StatCard label="Humidity" value={65} unit="%" />
-            <StatCard label="Wind" value={12} unit="mph" />
-            <StatCard label="Feels Like" value="73°" />
-          </div>
+          {/* Empty State - Show initial placeholder or nothing */}
+          {state === 'empty' && (
+            <div className="text-center text-gray-500 py-12">
+              <p>Search for a city to see weather information</p>
+            </div>
+          )}
 
-          {/* 5-Day Forecast Table */}
-          <ForecastTable forecast={mockForecast} />
+          {/* Success State - Show weather data */}
+          {state === 'success' && weatherData && (
+            <>
+              {/* City Title */}
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                {weatherData.city}, {weatherData.country}
+              </h2>
+
+              {/* Summary Line */}
+              <p className="text-gray-300 mb-8 flex items-center gap-2">
+                <span>☀️</span>
+                <span>{getSummaryText(weatherData)}</span>
+              </p>
+
+              {/* Stat Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <StatCard
+                  label="Humidity"
+                  value={weatherData.current.humidity}
+                  unit="%"
+                />
+                <StatCard
+                  label="Wind"
+                  value={weatherData.current.windSpeed}
+                  unit="mph"
+                />
+                <StatCard
+                  label="Feels Like"
+                  value={formatTemp(weatherData.current.feelsLike)}
+                />
+              </div>
+
+              {/* 5-Day Forecast Table */}
+              <ForecastTable forecast={convertToForecastDays(weatherData)} />
+            </>
+          )}
 
           {/* Footer */}
-          <footer className="text-center text-gray-500 text-sm">
-            Weather data provided by Open-Meteo
-          </footer>
+          {state !== 'empty' && (
+            <footer className="text-center text-gray-500 text-sm mt-8">
+              Weather data provided by Open-Meteo
+            </footer>
+          )}
         </div>
       </main>
     </div>
