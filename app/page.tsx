@@ -4,6 +4,7 @@ import { useState } from 'react'
 import SearchBar from '@/components/SearchBar'
 import StatCard from '@/components/StatCard'
 import ForecastTable, { type ForecastDay } from '@/components/ForecastTable'
+import { getWeatherInfo, getWeatherLabel, getWeatherIcon } from '@/lib/weatherCodes'
 
 // Weather API response type
 interface WeatherData {
@@ -69,21 +70,34 @@ export default function Home() {
   // Helper to format temperature (will be extended in Step 6)
   const formatTemp = (temp: number) => `${temp}°F`
 
-  // Helper to get summary text (placeholder - will use weather code mapping in Step 5)
+  // Helper to get summary text with weather condition
   const getSummaryText = (data: WeatherData) => {
     const high = data.daily[0]?.high || data.current.temperature
-    return `Mostly clear with a high of ${formatTemp(high)}`
+    // Use today's weather code (first day) or current weather code as fallback
+    const weatherCode = data.daily[0]?.weatherCode || data.current.weatherCode
+    const condition = getWeatherLabel(weatherCode).toLowerCase()
+    return `${condition} with a high of ${formatTemp(high)}`
   }
 
-  // Convert API data to ForecastDay format (condition will use weather code in Step 5)
+  // Helper to get summary icon from weather code
+  const getSummaryIcon = (data: WeatherData) => {
+    // Use today's weather code (first day) or current weather code as fallback
+    const weatherCode = data.daily[0]?.weatherCode || data.current.weatherCode
+    return getWeatherIcon(weatherCode)
+  }
+
+  // Convert API data to ForecastDay format using weather code mapping
   const convertToForecastDays = (data: WeatherData): ForecastDay[] => {
-    return data.daily.map((day) => ({
-      day: day.date,
-      high: formatTemp(day.high),
-      low: formatTemp(day.low),
-      condition: 'Clear', // Placeholder - will use weather code mapping in Step 5
-      icon: '☀️', // Placeholder - will use weather code mapping in Step 5
-    }))
+    return data.daily.map((day) => {
+      const weatherInfo = getWeatherInfo(day.weatherCode)
+      return {
+        day: day.date,
+        high: formatTemp(day.high),
+        low: formatTemp(day.low),
+        condition: weatherInfo.label,
+        icon: weatherInfo.icon,
+      }
+    })
   }
 
   return (
@@ -168,7 +182,7 @@ export default function Home() {
 
               {/* Summary Line */}
               <p className="text-gray-300 mb-8 flex items-center gap-2">
-                <span>☀️</span>
+                <span>{getSummaryIcon(weatherData)}</span>
                 <span>{getSummaryText(weatherData)}</span>
               </p>
 
