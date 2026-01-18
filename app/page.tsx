@@ -1,4 +1,27 @@
+'use client'
+
+import { useState } from 'react'
+import SearchBar from '@/components/SearchBar'
+import StatCard from '@/components/StatCard'
+import ForecastTable, { type ForecastDay } from '@/components/ForecastTable'
+
+// Mock data - will be replaced with API data later
+const mockForecast: ForecastDay[] = [
+  { day: 'Today', high: '75°', low: '58°', condition: 'Clear', icon: '☀️' },
+  { day: 'Tomorrow', high: '72°', low: '56°', condition: 'Partly Cloudy', icon: '⛅' },
+  { day: 'Wednesday', high: '68°', low: '54°', condition: 'Cloudy', icon: '☁️' },
+  { day: 'Thursday', high: '70°', low: '55°', condition: 'Clear', icon: '☀️' },
+  { day: 'Friday', high: '73°', low: '57°', condition: 'Partly Cloudy', icon: '⛅' },
+]
+
 export default function Home() {
+  const [searchValue, setSearchValue] = useState('')
+
+  const handleSearchSubmit = () => {
+    // Will be implemented in Step 4
+    console.log('Searching for:', searchValue)
+  }
+
   return (
     <div className="min-h-screen bg-[#0b0f14] flex flex-col">
       {/* Top Bar */}
@@ -21,30 +44,11 @@ export default function Home() {
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full max-w-4xl mx-auto">
           {/* Search Bar */}
-          <div className="mb-8">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search for a city"
-                className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
+          <SearchBar
+            value={searchValue}
+            onChange={setSearchValue}
+            onSubmit={handleSearchSubmit}
+          />
 
           {/* City Title */}
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
@@ -59,49 +63,13 @@ export default function Home() {
 
           {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <div className="text-sm text-gray-400 mb-1">Humidity</div>
-              <div className="text-2xl font-semibold text-white">65%</div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <div className="text-sm text-gray-400 mb-1">Wind</div>
-              <div className="text-2xl font-semibold text-white">12 mph</div>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <div className="text-sm text-gray-400 mb-1">Feels Like</div>
-              <div className="text-2xl font-semibold text-white">73°F</div>
-            </div>
+            <StatCard label="Humidity" value={65} unit="%" />
+            <StatCard label="Wind" value={12} unit="mph" />
+            <StatCard label="Feels Like" value="73°" />
           </div>
 
           {/* 5-Day Forecast Table */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-8">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white">5-Day Forecast</h3>
-            </div>
-            <div className="divide-y divide-gray-700">
-              {[1, 2, 3, 4, 5].map((day) => (
-                <div
-                  key={day}
-                  className="p-4 flex items-center justify-between hover:bg-gray-750 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="text-white font-medium">
-                      {day === 1 ? 'Today' : `Day ${day}`}
-                    </div>
-                  </div>
-                  <div className="flex-1 text-center text-gray-300">
-                    <span className="text-white font-medium">75°</span>
-                    <span className="mx-2 text-gray-500">/</span>
-                    <span>58°</span>
-                  </div>
-                  <div className="flex-1 text-center text-gray-300">Clear</div>
-                  <div className="flex-1 text-right">
-                    <span className="text-2xl">☀️</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ForecastTable forecast={mockForecast} />
 
           {/* Footer */}
           <footer className="text-center text-gray-500 text-sm">
@@ -112,4 +80,3 @@ export default function Home() {
     </div>
   )
 }
-
