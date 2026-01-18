@@ -32,6 +32,7 @@ export default function Home() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [state, setState] = useState<WeatherState>('empty')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [unit, setUnit] = useState<'c' | 'f'>('c')
 
   const fetchWeather = async (city: string) => {
     if (!city.trim()) {
@@ -110,9 +111,20 @@ export default function Home() {
           </h1>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">°C</span>
-            <div className="w-10 h-6 bg-gray-700 rounded-full relative">
-              <div className="w-4 h-4 bg-gray-400 rounded-full absolute top-1 left-1"></div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setUnit(unit === 'c' ? 'f' : 'c')}
+              aria-label="Toggle temperature unit"
+              className="w-10 h-6 bg-gray-700 rounded-full relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-[#0b0f14] transition-colors"
+              role="switch"
+              aria-checked={unit === 'f'}
+            >
+              <div
+                className={`w-4 h-4 bg-gray-400 rounded-full absolute top-1 transition-transform duration-200 ${
+                  unit === 'f' ? 'left-5' : 'left-1'
+                }`}
+              ></div>
+            </button>
             <span className="text-sm text-gray-400">°F</span>
           </div>
         </div>
