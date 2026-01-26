@@ -6,14 +6,19 @@ A modern, production-ready weather application built with Next.js, TypeScript, a
 
 ## Features
 
-- 🌍 **Global City Search** - Search for any city worldwide with real-time geocoding
-- 🌡️ **Current Weather** - View temperature, humidity, wind speed, and "feels like" temperature
-- 📅 **5-Day Forecast** - Get detailed daily forecasts with high/low temperatures
-- 🎨 **Weather Icons** - Visual weather conditions using emoji icons based on WMO weather codes
-- 💾 **Smart Caching** - 10-minute in-memory cache to reduce API calls and improve performance
-- 📱 **Fully Responsive** - Optimized for mobile, tablet, and desktop devices
-- ♿ **Accessible** - Built with ARIA labels and keyboard navigation support
-- 🎯 **Dark UI** - Beautiful dark theme with clean, modern design
+- **Global City Search** - Search for any city worldwide with real-time geocoding
+- **Geolocation** - Use your current location to get instant weather updates
+- **Recent Searches** - Quick access to your recently searched cities (stored locally)
+- **Temperature Unit Toggle** - Switch between Celsius (°C) and Fahrenheit (°F)
+- **Current Weather** - View temperature, humidity, wind speed, and "feels like" temperature
+- **5-Day Forecast** - Get detailed daily forecasts with high/low temperatures
+- **Weather Icons** - Visual weather conditions using emoji icons based on WMO weather codes
+- **Smart Caching** - 10-minute in-memory cache to reduce API calls and improve performance
+- **Debounced Search** - Optimized search to prevent excessive API calls
+- **Smooth Animations** - Beautiful fade-in transitions for better UX
+- **Fully Responsive** - Optimized for mobile, tablet, and desktop devices
+- **Accessible** - WCAG 2.1 AA compliant with ARIA labels and keyboard navigation
+- **Dark UI** - Beautiful dark theme with clean, modern design
 
 ## Tech Stack
 
@@ -191,15 +196,41 @@ This Next.js app can be deployed on any platform that supports Node.js:
 
 Example: `https://weather-app.vercel.app`
 
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint errors
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+
+### Code Quality
+
+This project uses:
+- **ESLint** - Code linting and quality checks
+- **Prettier** - Code formatting
+- **TypeScript** - Type safety
+
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+### Quick Start
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'feat: Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+3. Make your changes following our [Git Workflow](GIT_WORKFLOW.md)
+4. Commit using [Conventional Commits](GIT_WORKFLOW.md#conventional-commits)
+5. Push to the branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request using our [PR Template](.github/PULL_REQUEST_TEMPLATE.md)
+
+### Git Workflow
+
+We follow a structured Git workflow with Conventional Commits. See [GIT_WORKFLOW.md](GIT_WORKFLOW.md) for details.
 
 ## License
 
@@ -213,4 +244,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-Built with ❤️ using Next.js + TypeScript + Tailwind CSS
+Built with using Next.js + TypeScript + Tailwind CSS
