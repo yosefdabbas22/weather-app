@@ -35,60 +35,19 @@ interface ForecastResponse {
   }
 }
 
+/**
+ * Reverse geocodes coordinates to get city and country names
+ * Always returns English names for consistency
+ * Uses Nominatim (OpenStreetMap) with explicit English language setting
+ */
 async function reverseGeocode(latitude: number, longitude: number) {
-  // Use OpenWeather Geo Reverse API
-  const apiKey = process.env.OPENWEATHER_API_KEY
-  const url = new URL('https://api.openweathermap.org/geo/1.0/reverse')
-  url.searchParams.set('lat', latitude.toString())
-  url.searchParams.set('lon', longitude.toString())
-  url.searchParams.set('limit', '1')
-
-  // If API key is provided, use it; otherwise use free Nominatim as fallback
-  if (apiKey) {
-    url.searchParams.set('appid', apiKey)
-  } else {
-    // Fallback to Nominatim (OpenStreetMap) - free, no API key required
-    return reverseGeocodeNominatim(latitude, longitude)
-  }
-
-  try {
-    const response = await fetch(url.toString(), {
-      next: { revalidate: 3600 },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`OpenWeather reverse geocoding error: ${response.status}`, errorText)
-
-      // If API key is invalid or rate limited, fallback to Nominatim
-      if (response.status === 401 || response.status === 403 || response.status === 429) {
-        console.log('Falling back to Nominatim for reverse geocoding')
-        return reverseGeocodeNominatim(latitude, longitude)
-      }
-
-      throw new Error(`Reverse geocoding API error: ${response.status} ${response.statusText}`)
-    }
-
-    const data = await response.json()
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      // Fallback to Nominatim if no results
-      return reverseGeocodeNominatim(latitude, longitude)
-    }
-
-    const location = data[0]
-    return {
-      name: location.name || 'Unknown',
-      country: location.country || 'Unknown',
-    }
-  } catch (error) {
-    console.error('OpenWeather reverse geocoding error:', error)
-    // Fallback to Nominatim on any error
-    return reverseGeocodeNominatim(latitude, longitude)
-  }
+  // Always use Nominatim with explicit language=en for consistent English-only results
+  // This ensures location names are always in English, matching the search behavior
+  return reverseGeocodeNominatim(latitude, longitude)
 }
 
 // Fallback function using Nominatim (OpenStreetMap) - free, no API key required
+// Explicitly set language=en to ensure English-only location names
 async function reverseGeocodeNominatim(latitude: number, longitude: number) {
   const url = new URL('https://nominatim.openstreetmap.org/reverse')
   url.searchParams.set('format', 'json')
@@ -96,6 +55,7 @@ async function reverseGeocodeNominatim(latitude: number, longitude: number) {
   url.searchParams.set('lon', longitude.toString())
   url.searchParams.set('addressdetails', '1')
   url.searchParams.set('limit', '1')
+  url.searchParams.set('accept-language', 'en') // Force English language
 
   try {
     const response = await fetch(url.toString(), {

@@ -9,6 +9,7 @@ import { getWeatherInfo, getWeatherLabel, getWeatherIcon } from '@/lib/weatherCo
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 import { useGeolocation } from '@/lib/hooks/useGeolocation'
+import { normalizeCityName } from '@/lib/arabicNormalize'
 
 // Weather API response type
 interface WeatherData {
@@ -32,6 +33,190 @@ interface WeatherData {
 type WeatherState = 'empty' | 'loading' | 'error' | 'success'
 
 const MAX_RECENT_SEARCHES = 5
+
+// Geocoding result type from Open-Meteo
+interface GeocodingResultItem {
+  name: string
+  country: string
+  country_code?: string
+  latitude: number
+  longitude: number
+  population?: number
+  feature_code?: string
+}
+
+interface GeocodingResult {
+  results?: GeocodingResultItem[]
+}
+
+/**
+ * Checks if search input refers to Amman city (not Oman country)
+ */
+function isAmmanCity(input: string): boolean {
+  const normalized = normalizeCityName(input).toLowerCase().trim()
+
+  // Exclude Oman country references
+  const omanPatterns = ['سلطنة عمان', 'sultanate of oman', 'sultanate oman', 'country oman', 'عُمان']
+  for (const pattern of omanPatterns) {
+    if (normalized.includes(pattern.toLowerCase())) {
+      return false
+    }
+  }
+
+  // Check for Amman variants
+  const ammanVariants = ['عمان', 'amman', 'ammān', 'ammãn']
+  for (const variant of ammanVariants) {
+    const variantLower = variant.toLowerCase()
+    if (
+      normalized === variantLower ||
+      (normalized.includes(variantLower) && !normalized.includes('oman') && !normalized.includes('عُمان'))
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Filters geocoding results to find the best match
+ * Special handling for Amman - must be in Jordan
+ */
+function filterGeocodingResults(
+  results: GeocodingResult['results'],
+  cityName: string
+): GeocodingResultItem | null {
+  if (!results || results.length === 0) {
+    return null
+  }
+
+  // Special handling for Amman - must ALWAYS be in Jordan
+  if (isAmmanCity(cityName)) {
+    for (const result of results) {
+      const resultCountry = result.country?.toLowerCase() || ''
+      const resultCountryCode = result.country_code?.toLowerCase() || ''
+      const resultName = result.name?.toLowerCase() || ''
+
+      // CRITICAL: Must be in Jordan
+      const isJordan =
+        resultCountry === 'jordan' ||
+        resultCountry === 'الأردن' ||
+        resultCountryCode === 'jo' ||
+        resultCountryCode === 'jor'
+
+      if (!isJordan) {
+        continue
+      }
+
+      // Check if name matches Amman
+      const nameMatchesAmman =
+        resultName.includes('amman') ||
+        resultName === 'عمان' ||
+        resultName.includes('عمان') ||
+        result.feature_code === 'PPLC'
+
+      if (nameMatchesAmman) {
+        const isCapital = result.feature_code === 'PPLC' || result.feature_code === 'PPLA'
+        const hasHighPopulation = result.population && result.population > 100000
+
+        if (isCapital || hasHighPopulation || (result.population && result.population > 50000)) {
+          return result
+        }
+      }
+    }
+    return null
+  }
+
+  // For other cities, prefer capitals and higher population
+  const sortedResults = [...results].sort((a, b) => {
+    if (a.feature_code === 'PPLC' && b.feature_code !== 'PPLC') return -1
+    if (b.feature_code === 'PPLC' && a.feature_code !== 'PPLC') return 1
+    const popA = a.population || 0
+    const popB = b.population || 0
+    return popB - popA
+  })
+
+  const bestResult = sortedResults[0]
+  if (bestResult) {
+    const isCapital = bestResult.feature_code === 'PPLC' || bestResult.feature_code === 'PPLA'
+    const hasReasonablePopulation = bestResult.population && bestResult.population > 10000
+    if (isCapital || hasReasonablePopulation) {
+      return bestResult
+    }
+  }
+
+  return null
+}
+
+/**
+ * Geocodes a city name using Open-Meteo Geocoding API
+ * Returns coordinates and city/country info
+ */
+async function geocodeCityName(cityInput: string): Promise<{
+  latitude: number
+  longitude: number
+  city: string
+  country: string
+} | null> {
+  if (!cityInput || !cityInput.trim()) {
+    return null
+  }
+
+  const trimmed = cityInput.trim()
+
+  // Parse input: remove country name if present (e.g., "عمان، الأردن" -> "عمان")
+  const cityOnly = trimmed.split(/[،,]/)[0].trim()
+  const searchQuery = cityOnly || trimmed
+
+  // Check if input contains Arabic characters
+  const hasArabic = /[\u0600-\u06FF]/.test(searchQuery)
+
+  // Normalize for better matching
+  const normalized = normalizeCityName(searchQuery)
+
+  // Try geocoding with Arabic language first if input contains Arabic
+  const languages = hasArabic ? ['ar', 'en'] : ['en']
+
+  for (const language of languages) {
+    const queries = language === 'ar' && normalized !== searchQuery
+      ? [searchQuery, normalized]
+      : [normalized !== searchQuery ? normalized : searchQuery, searchQuery]
+
+    for (const query of queries) {
+      try {
+        const url = new URL('https://geocoding-api.open-meteo.com/v1/search')
+        url.searchParams.set('name', query)
+        url.searchParams.set('count', '5')
+        url.searchParams.set('language', language)
+
+        const response = await fetch(url.toString())
+
+        if (!response.ok) {
+          continue
+        }
+
+        const data: GeocodingResult = await response.json()
+
+        if (data.results && data.results.length > 0) {
+          const filtered = filterGeocodingResults(data.results, trimmed)
+          if (filtered) {
+            return {
+              latitude: filtered.latitude,
+              longitude: filtered.longitude,
+              city: filtered.name,
+              country: filtered.country,
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Geocoding error for "${query}" (${language}):`, error)
+        continue
+      }
+    }
+  }
+
+  return null
+}
 
 export default function Home() {
   const [searchValue, setSearchValue] = useState('')
@@ -60,7 +245,7 @@ export default function Home() {
   const { latitude, longitude, error: geoError, loading: geoLoading, requestLocation } =
     useGeolocation()
 
-  // Fetch weather by city name
+  // Fetch weather by city name - geocodes first, then calls API with coordinates
   const fetchWeatherByCity = useCallback(
     async (city: string) => {
       if (!city.trim()) {
@@ -71,7 +256,20 @@ export default function Home() {
       setErrorMessage('')
 
       try {
-        const response = await fetch(`/api/weather?city=${encodeURIComponent(city.trim())}`)
+        // Step 1: Geocode the city name to get coordinates
+        const geocodeResult = await geocodeCityName(city.trim())
+
+        if (!geocodeResult) {
+          setErrorMessage('City not found')
+          setState('error')
+          setWeatherData(null)
+          return
+        }
+
+        // Step 2: Call /api/weather with coordinates (not city name)
+        const response = await fetch(
+          `/api/weather?lat=${geocodeResult.latitude}&lon=${geocodeResult.longitude}`
+        )
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
@@ -85,11 +283,11 @@ export default function Home() {
         setWeatherData(data)
         setState('success')
 
-        // Add to recent searches
-        const normalizedCity = city.trim()
+        // Add to recent searches - use original input for display
+        const displayName = city.trim()
         setRecentSearches((prev) => {
-          const filtered = prev.filter((item) => item.toLowerCase() !== normalizedCity.toLowerCase())
-          return [normalizedCity, ...filtered].slice(0, MAX_RECENT_SEARCHES)
+          const filtered = prev.filter((item) => item.toLowerCase() !== displayName.toLowerCase())
+          return [displayName, ...filtered].slice(0, MAX_RECENT_SEARCHES)
         })
       } catch (error) {
         console.error('Weather fetch error:', error)
